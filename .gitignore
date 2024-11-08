@@ -1,0 +1,21 @@
+# Environment and configuration files
+.env
+app.yaml
+.gcloudignore
+
+# Node modules and build directories
+node_modules/
+dist/
+
+# Expo specific files and directories
+.expo/
+expo-env.d.ts
+
+# System files
+.DS_Store
+
+# Security certificates
+*.pem
+
+# Google Cloud service account JSON file
+impactful-arbor-425611-c6-dab6360bfb16.json
