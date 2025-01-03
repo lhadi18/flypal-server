@@ -34,19 +34,30 @@ interface Airport {
   objectId: string
 }
 
-const parseInput = async (lines: string[]): Promise<Duty[]> => {
+const parseAirAsiaRoster = async (lines: string[]): Promise<{ duties: Duty[]; startDate: string; endDate: string }> => {
   const data: Duty[] = []
   let currentDuty: Duty = {}
   let standbyDuty = false
 
-  const invisibleUnicodeRegex = /[\u200B\u200C\u200D\uFEFF]/g // Regex to match invisible unicode characters
+  const invisibleUnicodeRegex = /[\u200B\u200C\u200D\uFEFF]/g
+  const dateRangeRegex = /(\d{2}\/\d{2}\/\d{4})\s*-\s*(\d{2}\/\d{2}\/\d{4})/
+
+  let startDate = ''
+  let endDate = ''
 
   const isTime = (str: string) => /^\d{2}:\d{2}$/.test(str)
   const isFlightNumber = (str: string) => /^D\d{3,4}$/.test(str)
   const isAirportCode = (str: string) => /^[A-Z]{3}$/.test(str.replace('*', ''))
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i].replace(invisibleUnicodeRegex, '').trim() // Remove invisible characters and trim whitespace
+    let line = lines[i].replace(invisibleUnicodeRegex, '').trim()
+
+    const dateMatch = line.match(dateRangeRegex)
+    if (dateMatch) {
+      startDate = dateMatch[1]
+      endDate = dateMatch[2]
+      continue
+    }
 
     const standbyMatch = line.match(/D7S\d/)
     if (standbyMatch) {
@@ -81,7 +92,7 @@ const parseInput = async (lines: string[]): Promise<Duty[]> => {
         }
       }
     } else if (isAirportCode(line.replace('*', ''))) {
-      line = line.replace('*', '') // Remove asterisk from airport code before assigning
+      line = line.replace('*', '')
       if (!currentDuty.departureAirport) {
         currentDuty.departureAirport = line
       } else {
@@ -103,24 +114,6 @@ const parseInput = async (lines: string[]): Promise<Duty[]> => {
   if (Object.keys(currentDuty).length > 0) {
     currentDuty.type = currentDuty.standby ? 'STANDBY' : 'FLIGHT_DUTY'
     data.push(currentDuty)
-  }
-
-  for (let duty of data) {
-    if (duty.reportingTime) {
-      duty.dutyEndTime = duty.arrivalTime
-      duty.arrivalTime = duty.departureTime
-      duty.departureTime = duty.reportingTime
-      delete duty.reportingTime
-    }
-
-    if (duty.standby && duty.overnight) {
-      if (duty.startTime && duty.endTime && duty.endTime < duty.startTime) {
-        const [hours, minutes] = duty.endTime.split(':').map(Number)
-        const newEndTime = new Date()
-        newEndTime.setHours(hours + 24, minutes)
-        duty.endTime = `${newEndTime.getHours().toString().padStart(2, '0')}:${newEndTime.getMinutes().toString().padStart(2, '0')}`
-      }
-    }
   }
 
   const uniqueAirports = extractUniqueAirports(data)
@@ -149,24 +142,25 @@ const parseInput = async (lines: string[]): Promise<Duty[]> => {
   })
 
   // Filter out incomplete duties
-  return data.filter(
+  const filteredDuties = data.filter(
     duty =>
       (duty.flightNumber && duty.departureAirport && duty.arrivalAirport && duty.departureTime && duty.arrivalTime) ||
       (duty.standby && duty.startTime && duty.endTime)
   )
+
+  return { duties: filteredDuties, startDate, endDate }
 }
 
 const extractUniqueAirports = (duties: Duty[]): string[] => {
   const airportSet = new Set<string>()
 
   duties.forEach(duty => {
-    // Ensure the duty has sufficient information to be considered valid
     if (duty.flightNumber && duty.departureTime && duty.arrivalTime) {
       if (typeof duty.departureAirport === 'string') {
-        airportSet.add(duty.departureAirport) // Only add strings
+        airportSet.add(duty.departureAirport)
       }
       if (typeof duty.arrivalAirport === 'string') {
-        airportSet.add(duty.arrivalAirport) // Only add strings
+        airportSet.add(duty.arrivalAirport)
       }
     }
   })
@@ -174,4 +168,4 @@ const extractUniqueAirports = (duties: Duty[]): string[] => {
   return Array.from(airportSet)
 }
 
-export { parseInput, Duty }
+export { parseAirAsiaRoster, Duty }
