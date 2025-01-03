@@ -14,10 +14,15 @@ import nacl from 'tweetnacl'
 import multer from 'multer'
 import bcrypt from 'bcrypt'
 
-const DEFAULT_PROFILE_PICTURE_URL = 'https://storage.googleapis.com/flypal/profile-pictures/default-profile-picture.jpg'
+const DEFAULT_PROFILE_PICTURE_URL =
+  'https://storage.googleapis.com/flypal/profile-pictures/default-profile-picture.jpg'
 
-export const registerUser = async (req: Request, res: Response): Promise<void> => {
-  const { firstName, lastName, email, password, homebase, airline, role } = req.body
+export const registerUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { firstName, lastName, email, password, homebase, airline, role } =
+    req.body
 
   try {
     const userExists = await User.findOne({ email })
@@ -34,7 +39,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       password,
       homebase,
       airline,
-      role
+      role,
     })
 
     await user.save()
@@ -46,7 +51,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       email: user.email,
       homebase: user.homebase,
       airline: user.airline,
-      role: user.role
+      role: user.role,
     })
   } catch (error) {
     console.error('Error registering user:', error)
@@ -55,10 +60,14 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 }
 
 export const loginUser = async (req: Request, res: Response) => {
+  console.log('Login API Called')
   const { email, password } = req.body
 
   try {
-    const user = await User.findOne({ email }).populate('homebase').populate('airline').populate('role', 'value')
+    const user = await User.findOne({ email })
+      .populate('homebase')
+      .populate('airline')
+      .populate('role', 'value')
 
     if (user && (await user.matchPassword(password))) {
       let keyPair = await Key.findOne({ userId: user._id })
@@ -73,7 +82,7 @@ export const loginUser = async (req: Request, res: Response) => {
         keyPair = await Key.create({
           userId: user._id,
           publicKey: encodedPublicKey,
-          secretKey: encodedSecretKey // Secure this key (e.g., encrypt it)
+          secretKey: encodedSecretKey, // Secure this key (e.g., encrypt it)
         })
 
         console.log('New key pair generated and stored for user:', user._id)
@@ -88,7 +97,7 @@ export const loginUser = async (req: Request, res: Response) => {
         airline: user.airline,
         role: user.role,
         publicKey: keyPair.publicKey,
-        secretKey: keyPair.secretKey
+        secretKey: keyPair.secretKey,
       })
     } else {
       res.status(401).json({ message: 'Invalid email or password' })
@@ -98,7 +107,10 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 }
 
-export const validateUserId = async (req: Request, res: Response): Promise<void> => {
+export const validateUserId = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { userId } = req.body
 
   if (!userId) {
@@ -125,7 +137,10 @@ export const validateUserId = async (req: Request, res: Response): Promise<void>
   }
 }
 
-export const getUserDetails = async (req: Request, res: Response): Promise<void> => {
+export const getUserDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { userId } = req.query
 
   if (typeof userId !== 'string' || !mongoose.Types.ObjectId.isValid(userId)) {
@@ -153,7 +168,10 @@ export const getUserDetails = async (req: Request, res: Response): Promise<void>
 }
 
 // Update user details
-export const updateUserDetails = async (req: Request, res: Response): Promise<void> => {
+export const updateUserDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { id } = req.params
   const { firstName, lastName, email, homebase, airline, role } = req.body
 
@@ -174,7 +192,9 @@ export const updateUserDetails = async (req: Request, res: Response): Promise<vo
 
     await user.save()
 
-    const updatedUser = await User.findById(user._id).populate('homebase').populate('airline')
+    const updatedUser = await User.findById(user._id)
+      .populate('homebase')
+      .populate('airline')
 
     res.status(200).json({
       _id: updatedUser?._id,
@@ -183,7 +203,7 @@ export const updateUserDetails = async (req: Request, res: Response): Promise<vo
       email: updatedUser?.email,
       homebase: updatedUser?.homebase,
       airline: updatedUser?.airline,
-      role: updatedUser?.role
+      role: updatedUser?.role,
     })
   } catch (error) {
     console.error('Error updating user details:', error)
@@ -192,7 +212,10 @@ export const updateUserDetails = async (req: Request, res: Response): Promise<vo
 }
 
 // Update user password
-export const updateUserPassword = async (req: Request, res: Response): Promise<void> => {
+export const updateUserPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { id } = req.params
   const { password } = req.body
 
@@ -216,10 +239,16 @@ export const updateUserPassword = async (req: Request, res: Response): Promise<v
   }
 }
 
-export const friendRequest = async (req: Request, res: Response): Promise<void> => {
+export const friendRequest = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { senderId, recipientId } = req.body
 
-  if (!mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(recipientId)) {
+  if (
+    !mongoose.Types.ObjectId.isValid(senderId) ||
+    !mongoose.Types.ObjectId.isValid(recipientId)
+  ) {
     res.status(400).json({ message: 'Invalid senderId or recipientId' })
     return
   }
@@ -233,7 +262,10 @@ export const friendRequest = async (req: Request, res: Response): Promise<void> 
       return
     }
 
-    if (recipient.friendRequests.includes(senderId) || sender.sentFriendRequests.includes(recipientId)) {
+    if (
+      recipient.friendRequests.includes(senderId) ||
+      sender.sentFriendRequests.includes(recipientId)
+    ) {
       res.status(400).json({ message: 'Friend request already sent' })
       return
     }
@@ -266,8 +298,8 @@ export const friendList = async (req: Request, res: Response) => {
       populate: [
         { path: 'homebase', select: 'IATA ICAO city' },
         { path: 'airline', select: 'ICAO Name' },
-        { path: 'role', select: 'value' }
-      ]
+        { path: 'role', select: 'value' },
+      ],
     })
 
     if (!user) {
@@ -297,8 +329,8 @@ export const addFriend = async (req: Request, res: Response) => {
       populate: [
         { path: 'homebase', select: 'IATA ICAO city' },
         { path: 'airline', select: 'ICAO Name' },
-        { path: 'role', select: 'value' }
-      ]
+        { path: 'role', select: 'value' },
+      ],
     })
 
     if (!user) {
@@ -313,7 +345,10 @@ export const addFriend = async (req: Request, res: Response) => {
   }
 }
 
-export const acceptRequest = async (req: Request, res: Response): Promise<void> => {
+export const acceptRequest = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   console.log('Request payload:', req.body)
   const { senderId, recipientId } = req.body
 
@@ -329,10 +364,12 @@ export const acceptRequest = async (req: Request, res: Response): Promise<void> 
     sender.friends.push(recipientId)
     recipient.friends.push(senderId)
 
-    recipient.friendRequests = recipient.friendRequests.filter(request => request.toString() !== senderId.toString())
+    recipient.friendRequests = recipient.friendRequests.filter(
+      (request) => request.toString() !== senderId.toString()
+    )
 
     sender.sentFriendRequests = sender.sentFriendRequests.filter(
-      request => request.toString() !== recipientId.toString()
+      (request) => request.toString() !== recipientId.toString()
     )
 
     await sender.save()
@@ -345,11 +382,17 @@ export const acceptRequest = async (req: Request, res: Response): Promise<void> 
   }
 }
 
-export const removeFriend = async (req: Request, res: Response): Promise<void> => {
+export const removeFriend = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   console.log('Request payload:', req.body)
   const { userId, friendId } = req.body
 
-  if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(friendId)) {
+  if (
+    !mongoose.Types.ObjectId.isValid(userId) ||
+    !mongoose.Types.ObjectId.isValid(friendId)
+  ) {
     res.status(400).json({ message: 'Invalid userId or friendId' })
     return
   }
@@ -363,8 +406,12 @@ export const removeFriend = async (req: Request, res: Response): Promise<void> =
       return
     }
 
-    user.friends = user.friends.filter(id => id.toString() !== friendId.toString())
-    friend.friends = friend.friends.filter(id => id.toString() !== userId.toString())
+    user.friends = user.friends.filter(
+      (id) => id.toString() !== friendId.toString()
+    )
+    friend.friends = friend.friends.filter(
+      (id) => id.toString() !== userId.toString()
+    )
 
     await user.save()
     await friend.save()
@@ -376,10 +423,16 @@ export const removeFriend = async (req: Request, res: Response): Promise<void> =
   }
 }
 
-export const declineRequest = async (req: Request, res: Response): Promise<void> => {
+export const declineRequest = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { senderId, recipientId } = req.body
 
-  if (!mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(recipientId)) {
+  if (
+    !mongoose.Types.ObjectId.isValid(senderId) ||
+    !mongoose.Types.ObjectId.isValid(recipientId)
+  ) {
     res.status(400).json({ message: 'Invalid senderId or recipientId' })
     return
   }
@@ -393,9 +446,13 @@ export const declineRequest = async (req: Request, res: Response): Promise<void>
       return
     }
 
-    sender.sentFriendRequests = sender.sentFriendRequests.filter(id => id.toString() !== recipientId.toString())
+    sender.sentFriendRequests = sender.sentFriendRequests.filter(
+      (id) => id.toString() !== recipientId.toString()
+    )
 
-    recipient.friendRequests = recipient.friendRequests.filter(id => id.toString() !== senderId.toString())
+    recipient.friendRequests = recipient.friendRequests.filter(
+      (id) => id.toString() !== senderId.toString()
+    )
 
     await sender.save()
     await recipient.save()
@@ -407,7 +464,10 @@ export const declineRequest = async (req: Request, res: Response): Promise<void>
   }
 }
 
-export const getNonFriends = async (req: Request, res: Response): Promise<void> => {
+export const getNonFriends = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const userId = req.params.id
 
   if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -416,7 +476,9 @@ export const getNonFriends = async (req: Request, res: Response): Promise<void> 
   }
 
   try {
-    const currentUser = await User.findById(userId).select('friends sentFriendRequests friendRequests')
+    const currentUser = await User.findById(userId).select(
+      'friends sentFriendRequests friendRequests'
+    )
 
     if (!currentUser) {
       res.status(404).json({ message: 'User not found' })
@@ -425,17 +487,19 @@ export const getNonFriends = async (req: Request, res: Response): Promise<void> 
 
     // Exclude friends, friend requests and the logged-in user
     const nonFriends = await User.find({
-      _id: { $nin: [userId, ...currentUser.friends, ...currentUser.friendRequests] }
+      _id: {
+        $nin: [userId, ...currentUser.friends, ...currentUser.friendRequests],
+      },
     })
       .select('firstName lastName role email homebase airline profilePicture')
       .populate({
         path: 'role',
-        select: 'value'
+        select: 'value',
       })
 
     res.status(200).json({
       nonFriends,
-      sentFriendRequests: currentUser.sentFriendRequests // Include the sent friend requests
+      sentFriendRequests: currentUser.sentFriendRequests, // Include the sent friend requests
     })
   } catch (error) {
     console.error('Error fetching non-friends:', error)
@@ -455,8 +519,8 @@ export const getUsers = async (req: Request, res: Response) => {
         { email: { $regex: search, $options: 'i' } },
         { 'role.value': { $regex: search, $options: 'i' } },
         { 'homebase.name': { $regex: search, $options: 'i' } },
-        { 'airline.Name': { $regex: search, $options: 'i' } }
-      ]
+        { 'airline.Name': { $regex: search, $options: 'i' } },
+      ],
     }
 
     const aggregationPipeline = [
@@ -466,24 +530,24 @@ export const getUsers = async (req: Request, res: Response) => {
           from: 'roles', // collection name for Role
           localField: 'role',
           foreignField: '_id',
-          as: 'role'
-        }
+          as: 'role',
+        },
       },
       {
         $lookup: {
           from: 'airports', // collection name for Airport
           localField: 'homebase',
           foreignField: '_id',
-          as: 'homebase'
-        }
+          as: 'homebase',
+        },
       },
       {
         $lookup: {
           from: 'airlines', // collection name for Airline
           localField: 'airline',
           foreignField: '_id',
-          as: 'airline'
-        }
+          as: 'airline',
+        },
       },
       // Unwind arrays to get single documents
       { $unwind: { path: '$role', preserveNullAndEmptyArrays: true } },
@@ -493,7 +557,7 @@ export const getUsers = async (req: Request, res: Response) => {
       { $match: matchStage },
       // Pagination
       { $skip: (Number(page) - 1) * Number(limit) },
-      { $limit: Number(limit) }
+      { $limit: Number(limit) },
     ]
 
     const users = await User.aggregate(aggregationPipeline)
@@ -506,30 +570,30 @@ export const getUsers = async (req: Request, res: Response) => {
           from: 'roles',
           localField: 'role',
           foreignField: '_id',
-          as: 'role'
-        }
+          as: 'role',
+        },
       },
       {
         $lookup: {
           from: 'airports',
           localField: 'homebase',
           foreignField: '_id',
-          as: 'homebase'
-        }
+          as: 'homebase',
+        },
       },
       {
         $lookup: {
           from: 'airlines',
           localField: 'airline',
           foreignField: '_id',
-          as: 'airline'
-        }
+          as: 'airline',
+        },
       },
       { $unwind: { path: '$role', preserveNullAndEmptyArrays: true } },
       { $unwind: { path: '$homebase', preserveNullAndEmptyArrays: true } },
       { $unwind: { path: '$airline', preserveNullAndEmptyArrays: true } },
       { $match: matchStage },
-      { $count: 'total' }
+      { $count: 'total' },
     ]
 
     const countResult = await User.aggregate(countPipeline)
@@ -538,7 +602,7 @@ export const getUsers = async (req: Request, res: Response) => {
     res.status(200).json({
       users,
       totalPages: Math.ceil(totalDocuments / Number(limit)),
-      currentPage: Number(page)
+      currentPage: Number(page),
     })
   } catch (error) {
     console.error(error)
@@ -560,17 +624,28 @@ export const deleteUser = async (req: Request, res: Response) => {
     await DiningRecommendation.deleteMany({ user: id })
     await Checklist.deleteMany({ userId: id })
     await Bookmark.deleteMany({ userId: id })
-    await Key.deleteMany({userId: id})
+    await Key.deleteMany({ userId: id })
     await Message.deleteMany({
-      $or: [{ sender: id }, { recipient: id }]
+      $or: [{ sender: id }, { recipient: id }],
     })
     await User.updateMany({ friends: id }, { $pull: { friends: id } })
 
-    await User.updateMany({ friendRequests: id }, { $pull: { friendRequests: id } })
+    await User.updateMany(
+      { friendRequests: id },
+      { $pull: { friendRequests: id } }
+    )
 
-    await User.updateMany({ sentFriendRequests: id }, { $pull: { sentFriendRequests: id } })
+    await User.updateMany(
+      { sentFriendRequests: id },
+      { $pull: { sentFriendRequests: id } }
+    )
 
-    res.status(200).json({ message: 'User and all related records deleted successfully, and references removed' })
+    res
+      .status(200)
+      .json({
+        message:
+          'User and all related records deleted successfully, and references removed',
+      })
   } catch (error) {
     console.error('Error deleting user and related data:', error)
     res.status(500).json({ message: 'Server error' })
@@ -578,7 +653,8 @@ export const deleteUser = async (req: Request, res: Response) => {
 }
 
 export const createUser = async (req: Request, res: Response) => {
-  const { firstName, lastName, email, password, homebase, airline, role } = req.body
+  const { firstName, lastName, email, password, homebase, airline, role } =
+    req.body
 
   try {
     const existingUser = await User.findOne({ email })
@@ -593,7 +669,7 @@ export const createUser = async (req: Request, res: Response) => {
       password,
       homebase,
       airline,
-      role
+      role,
     })
 
     await user.save()
@@ -605,7 +681,7 @@ export const createUser = async (req: Request, res: Response) => {
       email: user.email,
       homebase: user.homebase,
       airline: user.airline,
-      role: user.role
+      role: user.role,
     })
   } catch (error) {
     res.status(500).json({ message: 'Server error' })
@@ -613,9 +689,13 @@ export const createUser = async (req: Request, res: Response) => {
 }
 
 // Update an existing user by ID
-export const updateUser = async (req: Request, res: Response): Promise<void> => {
+export const updateUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { id } = req.params
-  const { firstName, lastName, email, homebase, airline, role, password } = req.body
+  const { firstName, lastName, email, homebase, airline, role, password } =
+    req.body
 
   try {
     const user = await User.findById(id)
@@ -651,7 +731,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       email: user.email,
       homebase: user.homebase,
       airline: user.airline,
-      role: user.role
+      role: user.role,
     })
   } catch (error) {
     console.error('Error updating user:', error)
@@ -666,8 +746,8 @@ export const getMessages = async (req: Request, res: Response) => {
     const messages = await Message.find({
       $or: [
         { sender: userId, recipient: recipientId },
-        { sender: recipientId, recipient: userId }
-      ]
+        { sender: recipientId, recipient: userId },
+      ],
     }).sort({ timestamp: -1 })
 
     res.status(200).json(messages)
@@ -680,11 +760,14 @@ export const getMessages = async (req: Request, res: Response) => {
 export const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 6 * 1024 * 1024
-  }
+    fileSize: 6 * 1024 * 1024,
+  },
 })
 
-export const uploadProfilePicture = async (req: Request, res: Response): Promise<void> => {
+export const uploadProfilePicture = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.file) {
       res.status(400).json({ message: 'No file uploaded' })
@@ -704,8 +787,13 @@ export const uploadProfilePicture = async (req: Request, res: Response): Promise
     }
 
     // Delete the existing profile picture if it exists and is not the default
-    if (user.profilePicture && user.profilePicture !== DEFAULT_PROFILE_PICTURE_URL) {
-      const filePath = user.profilePicture.split(`https://storage.googleapis.com/${bucket.name}/`)[1]
+    if (
+      user.profilePicture &&
+      user.profilePicture !== DEFAULT_PROFILE_PICTURE_URL
+    ) {
+      const filePath = user.profilePicture.split(
+        `https://storage.googleapis.com/${bucket.name}/`
+      )[1]
       if (filePath) {
         try {
           await bucket.file(filePath).delete()
@@ -717,11 +805,13 @@ export const uploadProfilePicture = async (req: Request, res: Response): Promise
     }
 
     // Generate a unique filename for the new profile picture
-    const uniqueFilename = `profile-pictures/${uuidv4()}-${req.file.originalname}`
+    const uniqueFilename = `profile-pictures/${uuidv4()}-${
+      req.file.originalname
+    }`
     const blob = bucket.file(uniqueFilename)
     const blobStream = blob.createWriteStream({
       resumable: false,
-      contentType: req.file.mimetype
+      contentType: req.file.mimetype,
     })
 
     blobStream.on('error', (error: Error) => {
@@ -736,10 +826,17 @@ export const uploadProfilePicture = async (req: Request, res: Response): Promise
         // Update the user's profile picture URL in the database
         await User.findByIdAndUpdate(userId, { profilePicture: publicUrl })
 
-        res.status(200).json({ message: 'Profile picture uploaded successfully', url: publicUrl })
+        res
+          .status(200)
+          .json({
+            message: 'Profile picture uploaded successfully',
+            url: publicUrl,
+          })
       } catch (error) {
         console.error('Error updating database:', error)
-        res.status(500).json({ message: 'Error updating profile picture in database' })
+        res
+          .status(500)
+          .json({ message: 'Error updating profile picture in database' })
       }
     })
 
@@ -751,7 +848,10 @@ export const uploadProfilePicture = async (req: Request, res: Response): Promise
 }
 
 // Update user password
-export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+export const forgotPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { email, newPassword } = req.body
 
   try {
