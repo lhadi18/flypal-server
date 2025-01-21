@@ -12,7 +12,6 @@ import { v4 as uuidv4 } from 'uuid'
 import mongoose from 'mongoose'
 import nacl from 'tweetnacl'
 import multer from 'multer'
-import bcrypt from 'bcrypt'
 
 const DEFAULT_PROFILE_PICTURE_URL = 'https://storage.googleapis.com/flypal/profile-pictures/default-profile-picture.jpg'
 

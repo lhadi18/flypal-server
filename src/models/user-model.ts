@@ -1,6 +1,6 @@
 import { Document, Schema, Types, CallbackError } from 'mongoose'
 import mongoose from 'mongoose'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 export interface User extends Document {
   firstName: string
@@ -22,16 +22,25 @@ const userSchema: Schema<User> = new mongoose.Schema({
   lastName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  homebase: { type: mongoose.Schema.Types.ObjectId, ref: 'Airport', required: true },
-  airline: { type: mongoose.Schema.Types.ObjectId, ref: 'Airline', required: true },
+  homebase: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Airport',
+    required: true,
+  },
+  airline: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Airline',
+    required: true,
+  },
   role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: true },
   friendRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   sentFriendRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   profilePicture: {
     type: String,
-    default: 'https://storage.googleapis.com/flypal/profile-pictures/default-profile-picture.jpg'
-  }
+    default:
+      'https://storage.googleapis.com/flypal/profile-pictures/default-profile-picture.jpg',
+  },
 })
 
 userSchema.pre<User>('save', async function (next) {
